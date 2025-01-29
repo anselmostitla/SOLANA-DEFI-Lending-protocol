@@ -22,7 +22,7 @@ pub struct InitBank<'info> {
    )]
    pub bank: Account<'info, Bank>,
 
-   // token account will hold the tokens for the bank and this will initialize the token account
+   // We will need to have a token account to hold the tokens for the bank, and this will initialize the token account
    #[account(
       init,
       token::mint = mint, // We are going to set that this is for tokens and we are going to take the mint of the mint account that we are passing through 
@@ -32,7 +32,7 @@ pub struct InitBank<'info> {
       seeds = [b"treasury", mint.key().as_ref()],
       bump
    )]
-   pub bank_token_account: InterfaceAccount<'info, TokenAccount>, 
+   pub bank_token_account: InterfaceAccount<'info, TokenAccount>,
 
    // Because we are creating new token accounts 
    pub token_program: Interface<'info, TokenInterface>,
@@ -62,7 +62,7 @@ pub struct InitUser<'info> {
 
 // The initialization happened in the struct, so we save the information we need to the account state for the bank
 pub fn process_init_bank(ctx: Context<InitBank>, liquidation_threshold: u64, max_ltv: u64) -> Result<()> {
-   let bank = &mut ctx.accounts.bank; // We take a mutable reference 
+   let bank = &mut ctx.accounts.bank; // We take a mutable reference or a mutable borrow
    bank.mint_address = ctx.accounts.mint.key();
    bank.authority = ctx.accounts.signer.key();
    bank.liquidation_threshold = liquidation_threshold; 
