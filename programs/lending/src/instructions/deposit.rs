@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::{associated_token::AssociatedToken, token_interface::{Mint, TokenAccount, TokenInterface}};
+use anchor_spl::{associated_token::AssociatedToken, token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked}};
 use crate::state::{Bank, User}; 
 
 #[derive(Accounts)]
@@ -58,3 +58,25 @@ Now we need a user_token_account
 */
 
 
+/*
+We nee to make the logic to make a deposit into the protocol
+*/
+
+pub fn process_deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
+   let transfer_cpi_accounts = TransferChecked {
+      from: ctx.accounts.user_token_account.to_account_info(),
+      to: ctx.accounts.bank_token_account.to_account_info(),
+      authority: ctx.accounts.signer.to_account_info(), // because the signer owns the user_token_account
+      mint: ctx.accounts.mint.to_account_info(),
+   };
+
+   // Now we need to defined the CPI program that's gonna be used and since all the tokens that we are going to be transferring will be interface account tokens we can use the token program
+   let cpi_program = ctx.accounts.token_program.to_account_info();
+   let cpi_ctx = CpiContext::new(cpi_program, transfer_cpi_accounts);
+
+   let decimals = ctx.accounts.mint.decimals;
+
+   let _ = token_interface::transfer_checked(cpi_ctx, amount, decimals);
+
+   Ok(())
+}
