@@ -78,5 +78,32 @@ pub fn process_deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
 
    let _ = token_interface::transfer_checked(cpi_ctx, amount, decimals);
 
+   // update state of user token account and bank token account
+
+   let bank  =&mut ctx.accounts.bank;
+
+   if bank.total_deposits == 0 {
+      bank.total_deposits = amount;
+      bank.total_deposit_shares = amount;
+   }
+
+   let deposit_ratio = amount.checked_div(bank.total_deposit_shares).unwrap();
+   let user_shares = bank.total_deposit_shares.checked_mul(deposit_ratio).unwrap();
+
+   let user = &mut ctx.accounts.user_account;
+   match ctx.accounts.mint.to_account_info().key() {
+      key if key == user.usdc_address => {
+         user.deposited_usdc += amount;
+         user.deposited_usdc_shares += user_shares;
+      },
+      _ => {
+         user.deposited_sol += amount;
+         user.deposited_sol_shares += user_shares;
+      },
+   }
+
+   bank.total_deposits += amount;
+   bank.total_deposit_shares += user_shares;
+
    Ok(())
 }
