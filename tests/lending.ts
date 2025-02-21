@@ -5,6 +5,7 @@ import { Lending } from "../target/types/lending";
 
 
 import { createMint, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { min } from "bn.js";
 
 describe("lending", () => {
   // Configure the client to use the local cluster.
@@ -29,9 +30,11 @@ describe("lending", () => {
   
 
   let mint: anchor.web3.PublicKey
+  let mintUSDC: anchor.web3.PublicKey
+  let signer1
 
-  it("Is initialized!", async () => {
-    const signer1 = await signer()
+  beforeEach(async() => {
+    signer1 = await signer()
 
     mint = await createMint(
       pg.connection, // connection
@@ -41,14 +44,54 @@ describe("lending", () => {
       8 // decimals
     );
 
-    console.log("Creating bankPda....")
+    mintUSDC = await createMint(
+      pg.connection, // Client object that interacts with the Solana network
+      signer1, // fee payer
+      pg.wallet.publicKey, // mint authority
+      pg.wallet.publicKey, // freeze authority (you can use `null` to disable it. when you disable it, you can't turn it on again)
+      2 // decimals
+    );
+    
+  })
+
+  it("Init bank", async () => {
+
+    const liquidationThreshold = new anchor.BN(2)
+    const maxLtv = new anchor.BN(1)
+
     await program.methods
-    .initBank(new anchor.BN(1), new anchor.BN(1))
+    .initBank(liquidationThreshold, maxLtv)
     .accounts({
       mint: mint,
       tokenProgram: TOKEN_PROGRAM_ID,
     })
     .rpc();
     console.log("Created bankPda....")
+
+    const [bankPda] = anchor.web3.PublicKey.findProgramAddressSync(
+      [mint.toBuffer()],
+      program.programId
+    )
+
+    const bankFetch = await program.account.bank.fetch(bankPda)
+    console.log("liquidationThreshold: ", bankFetch.liquidationThreshold);
+    console.log("maxLtv: ", bankFetch.maxLtv);
   });
+
+  it("Init user", async() => {
+
+    await program.methods
+      .initUser(mintUSDC)
+      .accounts({
+      })
+      .rpc()
+
+    const [userPda] = anchor.web3.PublicKey.findProgramAddressSync(
+      [pg.wallet.publicKey.toBuffer()],
+      program.programId
+    )
+
+    const userFetch = await program.account.user.fetch(userPda)
+    console.log("userFetch", userFetch)
+  })
 });
