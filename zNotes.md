@@ -1,3 +1,8 @@
+### To run this md file 
+```shell
+ctrl + shift + p + Markdown: Open Preview
+```
+
 # Lending protocol of two assets: SOL and USDC.
 
 A lender will be able to deposit and withdraw, and a borrower will be able to borrow and repay assets on the lending protocol.
@@ -20,17 +25,24 @@ And User account.
 
 This guide explains the commands required to set up and install dependencies for your project.
 
-### 1. Initialize a New Project (create the workspace)
+### Initialize a New Project (create the workspace)
 ```shell
 anchor init lending && cd lending
 ```
 
-### 2. Check everything was installed correctly
+### Check anchor project was setup correctly
 ```shell
 a) anchor build
-b) update to "version = 3" in Cargo.lock
-c) anchor build
-d) nvm use node 18
+```
+
+### update to "version = 3" in Cargo.lock (checking continuation)
+```shell
+b) echo -e "s/version = 4/version = 3/" >> Cargo.lock
+```
+
+### Compile project again (checking continuation)
+```shell
+anchor build
 ```
 
 ### 3. Add to Anchor.toml (checking continuation)
@@ -39,7 +51,12 @@ d) nvm use node 18
 startup_wait = 100000
 ```
 
-### 4.  (checking continuation)
+### Use node 18 (checking continuation)
+```shell
+nvm use node 18
+```
+
+### Finally test the anchor project  (checking continuation)
 ```shell
 anchor test
 ```
