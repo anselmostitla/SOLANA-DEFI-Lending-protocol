@@ -16,3 +16,20 @@ pub struct Bank {
    pub last_updated: i64,
    pub interest_rate: u64,
 }
+
+#[account] 
+#[derive(InitSpace)]   // Because an account takes up space on-chain we use InitSpace to calculate the space needed.
+pub struct User { // This will be the structure to be able to initialized multiple user accounts for any user that comes to this application
+   pub owner: Pubkey,
+   pub deposited_sol: u64, 
+   pub deposited_sol_shares: u64,
+   pub borrowed_sol: u64,
+   pub borrowed_sol_shares: u64, 
+   pub deposited_usdc: u64,
+   pub deposited_usdc_shares: u64,
+   pub borrowed_usdc: u64,
+   pub borrowed_usdc_shares: u64,
+   pub usdc_address: Pubkey,
+   pub health_factor: u64,
+   pub last_updated: i64,
+}
