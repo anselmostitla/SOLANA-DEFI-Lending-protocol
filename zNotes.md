@@ -37,7 +37,7 @@ a) anchor build
 
 ### update to "version = 3" in Cargo.lock (checking continuation)
 ```shell
-b) echo -e "s/version = 4/version = 3/" >> Cargo.lock
+b) sed -i "s/^version = 4$/version = 3/" Cargo.lock
 ```
 
 ### Compile project again (checking continuation)
@@ -49,6 +49,8 @@ anchor build
 ```shell
 [test]
 startup_wait = 100000
+
+echo -e "\n[test]\nstartup_wait = 100000"
 ```
 
 ### Use node 18 (checking continuation)

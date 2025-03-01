@@ -1,14 +1,14 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
+use anchor_spl::{associated_token::AssociatedToken, token, token_interface::{Mint, TokenAccount, TokenInterface}};
 use crate::state::*;
 
 #[derive(Accounts)]
 pub struct InitBank<'info> {
+   // SENDER
    #[account(mut)]
    pub signer: Signer<'info>,
 
-   pub mint: InterfaceAccount<'info, Mint>,
-
+   // RECIPIENT
    #[account(
       init, 
       payer=signer, 
@@ -16,16 +16,17 @@ pub struct InitBank<'info> {
       // Since we are going to make this account a PDA we will define the seeds and bump
       // Every bank is going to have a unique mint key for the asset that correlates to the bank 
       seeds=[mint.key().as_ref()],
-      // seeds=[signer.key().as_ref()],
       bump,
    )]
    pub bank: Account<'info, Bank>,
+   
+   pub mint: InterfaceAccount<'info, Mint>,
 
    // We will need to have a token account to hold the tokens for the bank, and this will initialize the token account
    #[account(
       init,
       token::mint = mint, // We are going to set that this is for tokens and we are going to take the mint of the mint account that we are passing through 
-      token::authority = bank_token_account, // We are going to set the authority to itself(that is going to be the bank_token_account)
+      token::authority = bank, // We are going to set the authority to itself(that is going to be the bank_token_account)
       payer = signer, 
       // We dont want to use an associated token account we just want to have token account with a pda, so we are able to know that this account is specific to the lending protocol bank
       seeds = [b"treasury", mint.key().as_ref()],
@@ -33,8 +34,18 @@ pub struct InitBank<'info> {
    )]
    pub bank_token_account: InterfaceAccount<'info, TokenAccount>,
 
+
+   // #[account(
+   //    mut,
+   //    token::mint = mint,
+   //    token::authority = signer, 
+   // )]
+   // pub sender_token_account: InterfaceAccount<'info, TokenAccount>,
+
    // Because we are creating new token accounts 
    pub token_program: Interface<'info, TokenInterface>,
+
+   pub associated_token_account: Program<'info, AssociatedToken>,
 
    // Because we are initializing a new account we need to pass through the system program
    pub system_program: Program<'info, System>,
@@ -46,6 +57,9 @@ pub struct InitUser<'info> {
    #[account(mut)]
    pub signer: Signer<'info>,
 
+   #[account(mut)]
+   pub mint: InterfaceAccount<'info, Mint>, 
+
    #[account(
       init,
       payer = signer,
@@ -55,6 +69,30 @@ pub struct InitUser<'info> {
    )]
    pub user_account: Account<'info, User>, 
 
+   #[account(
+      // init,
+      token::mint = mint,
+      token::authority = signer,
+      // payer = signer,
+      // seeds = [b"user", signer.key().as_ref()],
+      // bump,
+   )]
+   pub user_token_account: InterfaceAccount<'info, TokenAccount>,
+
+   // #[account(
+   //    init,
+   //    token::mint = mint,
+   //    token::authority = signer,
+   //    payer = signer,
+   //    seeds = [b"user", signer.key().as_ref()],
+   //    bump,
+   // )]
+   // pub user_token_account: InterfaceAccount<'info, TokenAccount>,
+
+   // Because we are creating new token accounts 
+   pub token_program: Interface<'info, TokenInterface>,
+
+   pub associated_token_account: Program<'info, AssociatedToken>,
    // Because we are initializing a new account we need to pass through the system program
    pub system_program: Program<'info, System>,
 }

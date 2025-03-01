@@ -23,4 +23,12 @@ mod lending {
         process_init_user(ctx, usdc_address)
     }
 
+    pub fn minter(ctx: Context<MintTokens>, quantity:u64) -> Result<()>{
+        process_mint_tokens(ctx, quantity)
+    }
+
+    pub fn deposit(ctx:Context<Deposit>, amount:u64) -> Result<()> {
+        process_deposit(ctx, amount)
+    }
+
 }
