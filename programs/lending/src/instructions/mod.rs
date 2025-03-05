@@ -7,3 +7,7 @@ pub mod deposit;
 
 pub use minter::*;
 pub mod minter;
+
+pub use withdraw::*;
+pub mod withdraw;
+

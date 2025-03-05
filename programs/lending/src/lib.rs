@@ -2,7 +2,8 @@ use anchor_lang::prelude::*;
 
 
 // use state::Bank;     // First import State (Why we don't need to import state, maybe because they are the same level)
-pub mod state;       // Then register the mod state
+pub mod state;
+pub mod error;       // Then register the mod state
 
 use instructions::*;    // First import instructions
 pub mod instructions;   // Then register the mod instructions
@@ -29,6 +30,10 @@ mod lending {
 
     pub fn deposit(ctx:Context<Deposit>, amount:u64) -> Result<()> {
         process_deposit(ctx, amount)
+    }
+
+    pub fn withdraw(ctx: Context<Withdraw>, amount:u64) -> Result<()> {
+        process_withdraw(ctx, amount)
     }
 
 }

@@ -30,7 +30,6 @@ pub struct MintTokens<'info> {
 }
 
 pub fn process_mint_tokens(ctx: Context<MintTokens>, quantity:u64) -> Result<()> {
-   let autho = &ctx.accounts.signer.to_account_info();
 
    mint_to(
       CpiContext::new(

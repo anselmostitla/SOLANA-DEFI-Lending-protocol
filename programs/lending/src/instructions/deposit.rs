@@ -47,6 +47,15 @@ pub struct Deposit<'info> {
       // bump 
    )]
    pub user_token_account: InterfaceAccount<'info, TokenAccount>,
+
+   // #[account(
+   //    mut, 
+   //    token::mint = mint,
+   //    token::authority = signer,
+   //    seeds = [b"user", signer.key().as_ref()],
+   //    bump 
+   // )]
+   // pub user_token_account: InterfaceAccount<'info, TokenAccount>,
    
    pub token_program: Interface<'info, TokenInterface>,
    pub associated_token_program: Program<'info, AssociatedToken>,
@@ -69,7 +78,7 @@ We nee to make the logic to make a deposit into the protocol
 pub fn process_deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
 
    // This is something similar to when your mother or father says, who authorized you to ( got out, ). So in this case someone has to authorized the transfer.
-   let transfer_cpi_accounts = TransferChecked {
+   let cpi_accounts = TransferChecked {
       from: ctx.accounts.user_token_account.to_account_info(),
       to: ctx.accounts.bank_token_account.to_account_info(),
       authority: ctx.accounts.signer.to_account_info(), // because the signer owns the user_token_account
@@ -78,7 +87,7 @@ pub fn process_deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
 
    // Now we need to defined the CPI program that's gonna be used and since all the tokens that we are going to be transferring will be interface account tokens we can use the token program
    let cpi_program = ctx.accounts.token_program.to_account_info();
-   let cpi_ctx = CpiContext::new(cpi_program, transfer_cpi_accounts);
+   let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
 
    let decimals = ctx.accounts.mint.decimals;
 
