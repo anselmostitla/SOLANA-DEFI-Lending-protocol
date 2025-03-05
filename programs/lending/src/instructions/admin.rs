@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::{associated_token::AssociatedToken, token, token_interface::{Mint, TokenAccount, TokenInterface}};
+use anchor_spl::{associated_token::AssociatedToken, token_interface::{Mint, TokenAccount, TokenInterface}};
 use crate::state::*;
 
 #[derive(Accounts)]
@@ -34,14 +34,6 @@ pub struct InitBank<'info> {
    )]
    pub bank_token_account: InterfaceAccount<'info, TokenAccount>,
 
-
-   // #[account(
-   //    mut,
-   //    token::mint = mint,
-   //    token::authority = signer, 
-   // )]
-   // pub sender_token_account: InterfaceAccount<'info, TokenAccount>,
-
    // Because we are creating new token accounts 
    pub token_program: Interface<'info, TokenInterface>,
 
@@ -69,23 +61,13 @@ pub struct InitUser<'info> {
    )]
    pub user_account: Account<'info, User>, 
 
-   #[account(
-      // init,
-      token::mint = mint,
-      token::authority = signer,
-      // payer = signer,
-      // seeds = [b"user", signer.key().as_ref()],
-      // bump,
-   )]
-   pub user_token_account: InterfaceAccount<'info, TokenAccount>,
-
    // #[account(
-   //    init,
+   //    // init,
    //    token::mint = mint,
    //    token::authority = signer,
-   //    payer = signer,
-   //    seeds = [b"user", signer.key().as_ref()],
-   //    bump,
+   //    // payer = signer,
+   //    // seeds = [b"user", signer.key().as_ref()],
+   //    // bump,
    // )]
    // pub user_token_account: InterfaceAccount<'info, TokenAccount>,
 

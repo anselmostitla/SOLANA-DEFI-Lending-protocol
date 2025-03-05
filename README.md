@@ -73,5 +73,9 @@ cargo add anchor-spl
 idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 ```
 
+### 7. update to include the feature init_if_needed
+```shell
+cargo add anchor-lang --features init-if-needed
+```
 
 
