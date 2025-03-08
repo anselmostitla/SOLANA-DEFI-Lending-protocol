@@ -25,9 +25,9 @@ pub struct Deposit<'info> {
    #[account(
       mut, // This will mutable because we are depositing into the account
       token::mint = mint, // (NOT associated_token::mint = mint)
-      token::authority = bank, // (NEITHER associated_token::authority = bank NOR associated_token::authority = bank_token_account)
+      token::authority = bank_token_account, // (NEITHER associated_token::authority = bank NOR associated_token::authority = bank_token_account)
       seeds = [b"treasury", mint.key().as_ref()], // Add seeds for PDA
-      bump, 
+      bump,
    )]
    pub bank_token_account: InterfaceAccount<'info, TokenAccount>,
 
@@ -99,14 +99,22 @@ pub fn process_deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
    // update state of user token account and bank token account
 
    let bank  =&mut ctx.accounts.bank;
+   let user_shares:u64;
 
    if bank.total_deposits == 0 {
       bank.total_deposits = amount;
       bank.total_deposit_shares = amount;
+      user_shares = bank.total_deposit_shares; 
+   } else {
+      bank.total_deposits += amount;
+
+      let deposit_ratio = amount.checked_div(bank.total_deposit_shares).unwrap();
+      user_shares = bank.total_deposit_shares.checked_mul(deposit_ratio).unwrap();
+      bank.total_deposit_shares += user_shares;
    }
 
-   let deposit_ratio = amount.checked_div(bank.total_deposit_shares).unwrap();
-   let user_shares = bank.total_deposit_shares.checked_mul(deposit_ratio).unwrap();
+   // let deposit_ratio = amount.checked_div(bank.total_deposit_shares).unwrap();
+   // let user_shares = bank.total_deposit_shares.checked_mul(deposit_ratio).unwrap();
 
    let user = &mut ctx.accounts.user_account;
    match ctx.accounts.mint.to_account_info().key() {
@@ -120,8 +128,10 @@ pub fn process_deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
       },
    }
 
-   bank.total_deposits += amount;
-   bank.total_deposit_shares += user_shares;
+   // bank.total_deposits += amount;
+   // bank.total_deposit_shares += user_shares;
+
+   user.last_updated = Clock::get()?.unix_timestamp;
 
    Ok(())
 }
