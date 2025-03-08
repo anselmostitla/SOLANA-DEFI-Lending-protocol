@@ -78,4 +78,17 @@ idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 cargo add anchor-lang --features init-if-needed
 ```
 
+### Some github commands
+```shell
+git checkout -b new-branch-name       # Create and switch to a new branch
+git add .                             # Stage all changes
+git commit -m "Your commit message"   # Commit your changes
+git push -u origin new-branch-name    # Push new branch to remote
 
+# On GitHub (or your Git hosting platform), create a pull request from 'new-branch-name' to 'main'
+
+git checkout main                     # Switch to main branch
+git pull origin main                   # Ensure your local main is up-to-date
+git merge new-branch-name             # Merge your new branch into main
+git push origin main                   # Push the merged changes to remote main
+```
