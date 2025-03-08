@@ -1,8 +1,16 @@
 use anchor_lang::prelude::*;
 // use anchor_spl::{associated_token::AssociatedToken, token::TransferChecked, token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked}};
-use anchor_spl::associated_token::AssociatedToken;
-use anchor_spl::token::Transfer;
-use anchor_spl::token_interface::{ self, Mint, TokenAccount, TokenInterface, TransferChecked };
+// use anchor_spl::associated_token::AssociatedToken;
+// use anchor_spl::token::Transfer;
+// use anchor_spl::token_interface::{ Mint, TokenAccount, TokenInterface };
+use anchor_spl::{
+   associated_token::AssociatedToken,
+   token::Transfer,
+   token_interface::{ Mint, TokenAccount, TokenInterface }
+};
+
+
+
 // use anchor_spl::token::{Mint, Token, TokenAccount, Transfer};
 use crate::state::{Bank, User};
 use crate::error::ErrCode;
