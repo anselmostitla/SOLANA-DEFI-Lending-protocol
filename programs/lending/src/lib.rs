@@ -16,8 +16,8 @@ declare_id!("Ho5vdUND3M8RG7ztqJFVZDy834DcAqskuwxwcp2rjYac");
 #[program]
 mod lending {
     use super::*;
-    pub fn init_bank(ctx: Context<InitBank>, liquidation_threshold: u64, max_ltv: u64) -> Result<()> {
-        process_init_bank(ctx, liquidation_threshold, max_ltv)
+    pub fn init_bank(ctx: Context<InitBank>, liquidation_threshold: u64, max_ltv: u64, interest_rate: u64) -> Result<()> {
+        process_init_bank(ctx, liquidation_threshold, max_ltv, interest_rate)
     }
 
     pub fn init_user(ctx: Context<InitUser>, usdc_address: Pubkey) -> Result<()> {

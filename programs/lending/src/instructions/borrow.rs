@@ -29,7 +29,7 @@ pub struct Borrow<'info> {
    #[account(
       mut, // because I will transfer tokens from this account to user_token_account
       token::mint = mint,
-      token::authority = bank,
+      token::authority = bank_token_account,
       seeds = [b"treasury", mint.key().as_ref()],
       bump,
    )]

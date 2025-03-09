@@ -7,7 +7,7 @@ import { PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from
 import { createMint, TOKEN_PROGRAM_ID, mintTo, getOrCreateAssociatedTokenAccount, Account, createTransferInstruction, getAccount} from "@solana/spl-token";
 
 const SOL_DECIMALS = 9;
-const USDC_DECIMALS = 8;
+const USDC_DECIMALS = 6; // to make it compatible with usdc in other blockchains we should have 6 decimals
 
 describe("lending", () => {
   // Configure the client to use the local cluster.
@@ -38,6 +38,7 @@ describe("lending", () => {
   
   let liquidationThreshold = new anchor.BN(2);
   let maxLtv = new anchor.BN(1);
+  let interest_rate = new anchor.BN(5);
 
   [userAccountPda] = anchor.web3.PublicKey.findProgramAddressSync(
     [payer.publicKey.toBuffer()],
@@ -50,7 +51,7 @@ describe("lending", () => {
       console.log("Try init bank");
     } catch (error) {
       await program.methods
-      .initBank(liquidationThreshold, maxLtv)
+      .initBank(liquidationThreshold, maxLtv, interest_rate)
       .accounts({
         signer: payer.publicKey, 
         mint: mint,
@@ -86,12 +87,14 @@ describe("lending", () => {
   }
 
   async function deposit(mintToken:PublicKey) {
-    const bankPda = getBankPda(mintToken);
-    const bankTokenAccountPda = getBankTokenAccountPda(mintToken);
+    const [bankPda] = getBankPda(mintToken);
+    const [bankTokenAccountPda] = getBankTokenAccountPda(mintToken);
     const payerAssociatedTokenAccount = await getOrCreateATA(mintToken, payer);
+    let bankInfo = await program.account.bank.fetch(bankPda)
+    console.log("totalDeposits before: ", bankInfo.totalDeposits.toNumber());
     try {
       await program.methods
-      .deposit(new anchor.BN(1))
+      .deposit(new anchor.BN(100_000))
       .accounts({
         signer: payer.publicKey,
         mint: mintToken,
@@ -103,6 +106,9 @@ describe("lending", () => {
       })
       .signers([payer.payer])
       .rpc()
+
+    let bankInfo = await program.account.bank.fetch(bankPda)
+    console.log("totalDeposits after: ", bankInfo.totalDeposits.toNumber());
     } catch (error_code) {
       console.log("Deposit Error: ", error_code);
     }
@@ -128,17 +134,6 @@ describe("lending", () => {
       payer.payer,
       mint,
       user.publicKey
-    );
-  }
-
-  async function mintToAlice(mint: PublicKey) {
-    return await mintTo(
-      pg.connection, 
-      payer.payer,  // payer
-      mint,         // mint
-      aliceAssociatedTokenAccount.address,  // destination
-      payer.publicKey,  // authority
-      10_000_000_000
     );
   }
 
@@ -215,16 +210,19 @@ describe("lending", () => {
 
 
     if (numTest == 0) {
+      console.log("");
       mintSol = await createMintToken();
       mintUsdc = await createMintToken();
       console.log("numTest: ", numTest);
       console.log("mintSol: ", mintSol.toBase58());
       console.log("mintUsdc: ", mintUsdc.toBase58()); 
+      
     }
 
   })
 
   it("Init bank", async() => {
+    console.log("");
     numTest += 1;
     console.log("numTest: ", numTest);
 
@@ -234,9 +232,11 @@ describe("lending", () => {
     [bankPda] = getBankPda(mintToken);
     [bankTokenAccountPda] = getBankTokenAccountPda(mintToken);
     await getOrInitBank(mintToken, bankPda, bankTokenAccountPda);
+    
   })
 
   it("Init user", async() => {
+    console.log("");
     numTest += 1;
     console.log("numTest: ", numTest);
 
@@ -258,9 +258,11 @@ describe("lending", () => {
     })
     .signers([payer.payer])
     .rpc()
+    
   })
     
   it("Deposit usdc", async() => {
+    console.log("");
     numTest += 1;
     console.log("numTest: ", numTest);
 
@@ -282,27 +284,12 @@ describe("lending", () => {
     await transferMint(aliceAssociatedTokenAccount.address, payerAssociatedTokenAccount.address);
 
     // Deposit
-    // await deposit(mintToken);
-    try {
-      await program.methods
-      .deposit(new anchor.BN(1))
-      .accounts({
-        signer: payer.publicKey,
-        mint: mintToken,
-        bank: bankPda,
-        bankTokenAccount: bankTokenAccountPda,
-        userAccount: userAccountPda,  // USING USER INDEPENDENT OF SOL OR USDC (THIS CAN BE A VULNERABILITY) [SHOULD WE MAKE DEPENDENT TO THE mintToken]
-        userTokenAccount: payerAssociatedTokenAccount.address,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
-      .signers([payer.payer])
-      .rpc()
-    } catch (error) {
-      console.log("Deposit error", error);
-    }
+    await deposit(mintToken);
+    
   })
 
   it("Deposit sol", async() => {
+    console.log("");
     numTest += 1;
     console.log("numTest: ", numTest);
 
@@ -324,10 +311,11 @@ describe("lending", () => {
     await transferMint(aliceAssociatedTokenAccount.address, payerAssociatedTokenAccount.address);
 
     await deposit(mintToken);
-
+    
   })
 
   it("Withdraw usdc", async() => {
+    console.log("");
     numTest += 1;
     console.log("numTest: ", numTest);
 
@@ -346,7 +334,13 @@ describe("lending", () => {
     await mintTokenToATA(mintToken, aliceAssociatedTokenAccount.address)
     await transferMint(aliceAssociatedTokenAccount.address, payerAssociatedTokenAccount.address);
 
-    await deposit(mintToken);
+    // await deposit(mintToken);
+    let bankInfo = await program.account.bank.fetch(bankPda)
+    console.log("bankInfo.totalDeposits: ", bankInfo.totalDeposits.toNumber());
+
+
+    const ONE_MINUTE = 1 * 1000; // 1 second in milliseconds
+    await new Promise(resolve => setTimeout(resolve, ONE_MINUTE)); // 1,000 ms = 1 second
 
     await program.methods
       .withdraw(new anchor.BN(1))
@@ -361,6 +355,11 @@ describe("lending", () => {
       })
       .signers([payer.payer])
       .rpc()
+    
+    bankInfo = await program.account.bank.fetch(bankPda)
+    console.log("bankInfo.totalDeposits: ", bankInfo.totalDeposits.toNumber());
+    
+    
   })
 
 });
