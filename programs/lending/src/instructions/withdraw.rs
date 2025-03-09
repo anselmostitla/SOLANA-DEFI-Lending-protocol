@@ -1,3 +1,5 @@
+use std::f64::consts::E;
+
 use anchor_lang::prelude::*;
 // use anchor_spl::{associated_token::AssociatedToken, token::TransferChecked, token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked}};
 // use anchor_spl::associated_token::AssociatedToken;
@@ -32,25 +34,14 @@ pub struct Withdraw<'info> {
    )]
    pub bank: Account<'info, Bank>,
 
-   // // We need to withdraw from the bank_token_account pda
-   // #[account(
-   //    mut,
-   //    // token::mint = mint,
-   //    // token::authority = bank,
-   //    seeds = [b"treasury", mint.key().as_ref()],
-   //    bump
-   // )]
-   // pub bank_token_account: InterfaceAccount<'info, TokenAccount>,
-
    #[account(
       mut, // This will mutable because we are depositing into the account
       token::mint = mint, // (NOT associated_token::mint = mint)
-      token::authority = bank, // (NEITHER associated_token::authority = bank NOR associated_token::authority = bank_token_account)
+      token::authority = bank_token_account, // (NEITHER associated_token::authority = bank NOR associated_token::authority = bank_token_account)
       seeds = [b"treasury", mint.key().as_ref()], // Add seeds for PDA
       bump, 
    )]
    pub bank_token_account: InterfaceAccount<'info, TokenAccount>,
-
 
    #[account(
       mut,
@@ -75,6 +66,7 @@ pub struct Withdraw<'info> {
 }
 
 pub fn process_withdraw(ctx: Context<Withdraw>, amount:u64) -> Result<()> {
+   let bank = &mut ctx.accounts.bank;
    let user = &mut ctx.accounts.user_account;
 
    let deposited_value: u64;
@@ -84,14 +76,27 @@ pub fn process_withdraw(ctx: Context<Withdraw>, amount:u64) -> Result<()> {
       deposited_value = user.deposited_sol;
    }
 
+   /*
+      To compute the interest on an investment, the classical formula is:
+      principal * (1 + r*days/365)^(365/days) = principal * (1+r/t)^t -> principal*exp(rt)  // t=1 means one year
+   */
+
+   // Get the elements for computing the interest
+   let last_updated = bank.last_updated;
+   let elapsed_time = Clock::get()?.unix_timestamp - last_updated;
+   // let elapsed_time = 60*60*24*365;
+   let interest_rate = bank.interest_rate;
+
+   bank.total_deposits = ( (bank.total_deposits as f64) * E.powf((elapsed_time as f64) * (interest_rate as f64)/ (60.0 * 60.0 * 24.0 * 365.0)) ) as u64;
+
    if amount > deposited_value {
-      return Err(ErrCode::InsufficientFunds.into());
+      return Err(ErrCode::InsufficientFunds.into()); 
    }
 
    let mint_key = ctx.accounts.mint.key();
 
-   let bumps = ctx.bumps.bank;
-   let seeds = &[mint_key.as_ref(), &[bumps]];
+   let bumps = ctx.bumps.bank_token_account;
+   let seeds = &[b"treasury", mint_key.as_ref(), &[bumps]];
    let signer = &[&seeds[..]];
 
 
@@ -100,7 +105,7 @@ pub fn process_withdraw(ctx: Context<Withdraw>, amount:u64) -> Result<()> {
       Transfer{
          from: ctx.accounts.bank_token_account.to_account_info(),
          to: ctx.accounts.user_token_account.to_account_info(),
-         authority: ctx.accounts.bank.to_account_info(),
+         authority: ctx.accounts.bank_token_account.to_account_info(),
       },
       signer,   
    );
@@ -109,13 +114,13 @@ pub fn process_withdraw(ctx: Context<Withdraw>, amount:u64) -> Result<()> {
 
    // After withdrawing or transfer success, we need to update the state
 
-   let bank = &mut ctx.accounts.bank;
-   let shares_to_remove = (amount as f64 / bank.total_deposits as f64) * bank.total_deposit_shares as f64; 
    /*
-      L0 - L1 = s/T * L0 the liquidity to decrease from L0 to L1 must be proportional to the amount of shares to burn multiply by the current liquidity.
-      L0 - L1 / L0 = dx / x0 = dy / y0
-      => dx = x0 * s/T   and   dy = y0 * s/T
+      A SIMPLE RULE OF THREE
+      total_shares   -->      total_deposits
+            x        -->      withdrawal_amount
    */
+
+   let shares_to_remove = bank.total_deposit_shares * amount / bank.total_deposits;
    
 
    if ctx.accounts.mint.to_account_info().key() == user.usdc_address {
@@ -130,4 +135,8 @@ pub fn process_withdraw(ctx: Context<Withdraw>, amount:u64) -> Result<()> {
    bank.total_deposit_shares -= shares_to_remove as u64;
 
    Ok(())
+}
+
+pub fn calculate_interest(principal: f64, interest_rate: f64, time: f64) -> f64{
+   principal * (interest_rate*time).exp()
 }

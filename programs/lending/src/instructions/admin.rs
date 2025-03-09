@@ -26,7 +26,7 @@ pub struct InitBank<'info> {
    #[account(
       init,
       token::mint = mint, // We are going to set that this is for tokens and we are going to take the mint of the mint account that we are passing through 
-      token::authority = bank, // We are going to set the authority to itself(that is going to be the bank_token_account)
+      token::authority = bank_token_account, // We are going to set the authority to itself(that is going to be the bank_token_account)
       payer = signer, 
       // We dont want to use an associated token account we just want to have token account with a pda, so we are able to know that this account is specific to the lending protocol bank
       seeds = [b"treasury", mint.key().as_ref()],
@@ -80,12 +80,14 @@ pub struct InitUser<'info> {
 }
 
 // The initialization happened in the struct, so we save the information we need to the account state for the bank
-pub fn process_init_bank(ctx: Context<InitBank>, liquidation_threshold: u64, max_ltv: u64) -> Result<()> {
+pub fn process_init_bank(ctx: Context<InitBank>, liquidation_threshold: u64, max_ltv: u64, interest_rate: u64) -> Result<()> {
    let bank = &mut ctx.accounts.bank; // We take a mutable reference or a mutable borrow
    bank.mint_address = ctx.accounts.mint.key();
    bank.authority = ctx.accounts.signer.key();
    bank.liquidation_threshold = liquidation_threshold; 
    bank.max_ltv = max_ltv;
+   bank.interest_rate = (interest_rate as f64)/100.0;
+   bank.last_updated = Clock::get()?.unix_timestamp;
    Ok(())
 }
 

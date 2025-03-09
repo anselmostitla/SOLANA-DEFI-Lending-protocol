@@ -14,7 +14,7 @@ pub struct Bank {
    pub liquidation_close_factor: u64, // percentage of collateral that can be liquidated
    pub max_ltv: u64, // max percentage of collateral that can be borrow
    pub last_updated: i64,
-   pub interest_rate: u64,
+   pub interest_rate: f64,
 }
 
 #[account] 
