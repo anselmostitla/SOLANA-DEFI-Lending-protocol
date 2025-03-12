@@ -92,3 +92,23 @@ git pull origin main                   # Ensure your local main is up-to-date
 git merge new-branch-name             # Merge your new branch into main
 git push origin main                   # Push the merged changes to remote main
 ```
+
+### Install dependencies to use Bankrun
+```shell
+npm i anchor-bankrun solana-bankrun @solana/spl-token jest spl-token-bankrun
+```
+
+### Navigate to programs/lending/Cargo.toml and add "anchor-spl" to the dependencies
+```shell
+[dependencies]
+anchor-lang = { version = "0.30.1", features = ["init-if-needed"] }
+anchor-spl = "0.30.1"
+```
+
+### Copy `.so` File
+```shell
+mkdir tests/fixtures
+cp target/deploy/lending.so tests/fixtures
+```
+
+###
