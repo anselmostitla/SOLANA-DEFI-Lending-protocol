@@ -86,7 +86,7 @@ pub fn process_init_bank(ctx: Context<InitBank>, liquidation_threshold: u64, max
    bank.authority = ctx.accounts.signer.key();
    bank.liquidation_threshold = liquidation_threshold; 
    bank.max_ltv = max_ltv;
-   bank.interest_rate = (interest_rate as f64)/100.0;
+   bank.interest_rate = interest_rate;
    bank.last_updated = Clock::get()?.unix_timestamp;
    Ok(())
 }

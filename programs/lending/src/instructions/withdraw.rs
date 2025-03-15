@@ -87,7 +87,7 @@ pub fn process_withdraw(ctx: Context<Withdraw>, amount:u64) -> Result<()> {
    // let elapsed_time = 60*60*24*365;
    let interest_rate = bank.interest_rate;
 
-   bank.total_deposits = ( (bank.total_deposits as f64) * E.powf((elapsed_time as f64) * (interest_rate as f64)/ (60.0 * 60.0 * 24.0 * 365.0)) ) as u64;
+   bank.total_deposits = ( (bank.total_deposits as f64) * E.powf((elapsed_time as f64) * (interest_rate as f64)/ (60.0 * 60.0 * 24.0 * 365.0 * 100.0)) ) as u64;
 
    if amount > deposited_value {
       return Err(ErrCode::InsufficientFunds.into()); 
