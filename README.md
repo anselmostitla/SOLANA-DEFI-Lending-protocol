@@ -111,4 +111,14 @@ mkdir tests/fixtures
 cp target/deploy/lending.so tests/fixtures
 ```
 
-###
+### If you want to remove the logs
+
+Open up `Anchor.toml` and update your `[scripts]` section to look like this
+
+```shell
+[scripts]
+test = "RUST_LOG= yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+test_debug = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+```
+
+Now, when you run `anchor test`, you should see no logs:

@@ -37,7 +37,7 @@ const connection = new Connection((networks[0]), 'confirmed');
 
 
 describe("Bankrun Lending", () => {
-   // Boiler plate variables
+   // Boiler plate variables (types definitions)
    let context: ProgramTestContext;
    let provider: BankrunProvider;
    let program: anchor.Program<Lending>;
@@ -48,6 +48,7 @@ describe("Bankrun Lending", () => {
    let mintUsdc: anchor.web3.PublicKey;
    let bankPda: anchor.web3.PublicKey;
    let bankTokenAccountPda: anchor.web3.PublicKey;
+   let userPda: anchor.web3.PublicKey;
 
    // Input params
    let liquidationThreshold = new anchor.BN(2);
@@ -57,18 +58,18 @@ describe("Bankrun Lending", () => {
    let numTest = 0
 
    before(async() => {
-      // Boiler plate variables
+      /***** Boiler plate variables (assign values) *****/
       context = await startAnchor(PROJECT_DIRECTORY, [], []);
       provider = new BankrunProvider(context);
       anchor.setProvider(provider);
       program = new anchor.Program<Lending>(IDL as Lending, provider);
       banksClient = context.banksClient;
    
-      payer = provider.wallet.payer;
-      // richPerson = Keypair.generate();
-      console.log("payer: ", payer);
+      payer = provider.wallet.payer;   // richPerson = Keypair.generate();
+      console.log("payer: ", payer.publicKey.toBase58());
 
-      // Create a new mint
+      
+      /***** Create mints *****/
       mintSol = await createMint(
          banksClient, // connection
          payer, // fee payer (pg.wallet.keypair)
@@ -76,26 +77,40 @@ describe("Bankrun Lending", () => {
          payer.publicKey, // freeze authority (you can use `null` to disable it. when you disable it, you can't turn it on again)
          9 // decimals
       );
-      console.log("mintSol: ", mintSol);
+      console.log("mintSol: ", mintSol.toBase58());
+
+      mintUsdc = await createMint(
+         banksClient,
+         payer,
+         payer.publicKey,
+         payer.publicKey,
+         6
+      )
+      console.log("mintUsdc: ", mintUsdc.toBase58());
       
-      // Derive PDAs
+      /***** Derive PDAs *****/
       [bankPda] = anchor.web3.PublicKey.findProgramAddressSync(
          [mintSol.toBuffer()],
          program.programId
       );
-      console.log("bankPda: ", bankPda);
+      console.log("bankPda: ", bankPda.toBase58());
 
       [bankTokenAccountPda] = anchor.web3.PublicKey.findProgramAddressSync(
          [Buffer.from("treasury"), mintSol.toBuffer()],
          program.programId
       )
-      console.log("bankTokenAccountPda: ", bankTokenAccountPda);
+      console.log("bankTokenAccountPda: ", bankTokenAccountPda.toBase58());
+
+      [userPda] = anchor.web3.PublicKey.findProgramAddressSync(
+         [payer.publicKey.toBuffer()],
+         program.programId
+      )
 
    })
 
    beforeEach(async() => {
+      console.log("\n-------------------------");
       numTest += 1
-      console.log("beforeEach numTest: ", numTest);
    })
 
    it("Init Bank", async() => {
@@ -114,14 +129,23 @@ describe("Bankrun Lending", () => {
       const bankInfo = await program.account.bank.fetch(bankPda)
       expect(bankInfo.liquidationThreshold.toNumber()).to.be.equal(liquidationThreshold.toNumber());
       expect(bankInfo.maxLtv.toNumber()).to.be.equal(maxLtv.toNumber());
-      console.log("interest_rate: ", bankInfo.maxLtv.toNumber(), interest_rate.toNumber());
+      expect(bankInfo.interestRate.toNumber()).to.be.equal(interest_rate.toNumber())
    })
 
-   it("Two", async() => {
-      console.log("Two");
-
-      numTest += 1
-      console.log("Two numTest: ", numTest);
+   it("Init user", async() => {
+      await program.methods
+         .initUser(mintUsdc)
+         .accounts({
+            signer: payer.publicKey,
+            mint: mintUsdc,
+            userAccount: userPda,
+            tokenProgram: TOKEN_PROGRAM_ID,
+         })
+         .signers([payer])
+         .rpc()
+      const userInfo = await program.account.user.fetch(userPda)
+      expect(userInfo.owner.toBase58()).to.be.equal(payer.publicKey.toBase58())
+      expect(userInfo.usdcAddress.toBase58()).to.be.equal(mintUsdc.toBase58())
    })
 
 })
